@@ -2,6 +2,7 @@ library(tidyverse)
 library(viridis)
 library(hrbrthemes)
 library(ggpubr)
+library(ggTimeSeries)
 
 
 data <- read.csv("./Data/copper_cytometry.csv", header = TRUE, sep = ";", skip = 0, skipNul = FALSE)
@@ -10,29 +11,48 @@ data$Tiempo <- factor(data$Tiempo, levels = unique(data$Tiempo))
 data$Replica <- factor(data$Replica, levels = unique(data$Replica))
 
 luci <- read.csv("./Data/ostreococcus_lucimarinus.csv", header = TRUE, sep = ";", skip = 0, skipNul = FALSE)
+luci <- luci[,-7]
 luci$Muestreo <- factor(luci$Muestreo, levels = unique(luci$Muestreo))
+luci$No_Muestreo <- factor(luci$No_Muestreo, levels = unique(luci$No_Muestreo))
 luci$Tiempo <- factor(luci$Tiempo, levels = unique(luci$Tiempo))
 luci$Replica <- factor(luci$Replica, levels = unique(luci$Replica))
 
-longluci <- gather(luci[,c(2:7)], "Condition", "Counts", 4:6)
-longluci$Condition <- factor(longluci$Condition, levels = unique(longluci$Condition))
+long <- gather(luci[,c(2:5,7,9,11)], "Condition", "Counts", 5:7)
+long$Condition <- factor(long$Condition, levels = unique(long$Condition))
 
-t1 <- ggplot(longluci, aes(x = Muestreo, 
-                           y = Counts, 
-                           fill = Condition)) + 
+ggplot(long, aes(x = Muestreo, y = Counts, group = Condition, color = Condition)) +
+  geom_line() +
+  scale_color_manual(values = c("#F94144", "#16DB93", "#0054A3")) +
+  ggtitle("Exploration") +
+  theme_light() +
+  ylab("Counts/mL")
+
+real <- gather(luci[,c(2:6,8,10)], "Condition", "Counts", 5:7)
+real$Condition <- factor(real$Condition, levels = unique(real$Condition))
+
+ggplot(real, aes(x = Muestreo,
+                 y = Counts,
+                 fill = Condition)) + 
   geom_boxplot() + 
-  geom_smooth(se = FALSE, linewidth = 1) + 
   scale_fill_manual(values = c("#F94144", "#16DB93", "#0054A3")) + 
-  hrbrthemes::theme_ipsum(base_size = 13, axis_col = "#000000", axis_title_size = 15, plot_title_size = 20, axis_text_size = 10) + 
-  theme()
-t1
+  ggtitle("Exploration") + 
+  theme_light() + 
+  ylab("Counts/mL")
 
 ggplot(longluci, aes(x = Muestreo, y = Counts)) + 
   geom_point()
 
 
+#filter <- dplyr::filter(longluci, Replica == 1 & Condition == "Cobre")
+#ggTimeSeries::ggplot_waterfall(dtData = filter, cXColumnName = "No_Muestreo", cYColumnName = "Counts")
 
 
+ggplot(filter, aes(x=year, y=n, group=name, color=name)) +
+  geom_line() +
+  scale_color_viridis(discrete = TRUE) +
+  ggtitle("Popularity of American names in the previous 30 years") +
+  theme_ipsum() +
+  ylab("Number of babies born")
 
 long$Microorganism <- as.factor(long$Microorganism)
 logbase <- vegan::decostand(long$Counts, "log") %>% as.list()
